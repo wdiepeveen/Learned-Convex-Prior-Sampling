@@ -1,1 +1,1 @@
-# Learned-Convex-Prior-Sampling
+# Learned Convex Prior Sampling
