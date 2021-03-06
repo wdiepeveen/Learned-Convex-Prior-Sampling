@@ -114,7 +114,7 @@ X_{n+1} = X_n - \delta \nabla f(X_n) - \tfrac{\delta}{\lambda} ( X_n - \text{Pro
 \end{equation}
 (where $Z_i \overset{iid}{\sim} N(0,\mathbf{1})$ and $\delta < 2 \lambda ( L_f \lambda + 1)^{-1}$) converges exponentially fast to $\pi_{X \mid Y}$ as $n \rightarrow \infty$.
 \end{prop}
-From equation \ref{eq:posterior} we see that:
+From equation \ref{eq:posterior} we see that for some normalisation constant $C$:
 \begin{equation}
 - \log \pi_{X \mid Y} = - \log C - \log \pi_{Y \mid X} - \log \pi_X	
 \end{equation}
@@ -126,9 +126,11 @@ Since $g$ is sub-differentiable, we can define see that the proximal operator ca
 \end{equation}
 This can be seen as if $u \in (I_\mathbb{X} + \lambda \partial g)(x)$ then $0 \in \lambda \partial g (u) + u - x$ so $u$ is a minimiser of $g(u) + \| x - u \|^2_\mathbb{X} / (2 \lambda)$. Since this is strongly convex, the inverse image is a singleton. \\
 \\
-{\cred cite Subhadip} have shown that they can learn an \textbf{input convex neural network} (ICNN) by using nodes of the form:
+{\cred cite Subhadip} have shown that they can learn $g$ as an \textbf{input convex neural network} (ICNN) by using nodes of the form:
 \[ z_{i+1} = \phi_i ( B_i (z_i) + W_i(x_i) + b_i) \]
-If the weights $B_i$ are all non-negative and the $\phi_i$ are each convex and monotone then the learned network is also convex. If we use a smooth activation function $\phi_i$, this is also guaranteed to be smooth. This means that we can analytically compute $U = I_\mathbb{X} + \lambda \nabla g$, and so computing $\text{prox}_g^\lambda$  can be done at the cost of inverting $U$.
+If the weights $B_i$ are all non-negative and the $\phi_i$ are each convex and monotone then the learned network is also convex. \\
+\\
+If we use a smooth activation function $\phi_i$, this is also guaranteed to be smooth. This means that we can ignore the proximal step in MYULA entirely - we can just use the smooth posterior to sample easily. 
 
 
 \newpage
@@ -145,8 +147,9 @@ In Willem's example, we have $y = (1,1)$, $\Sigma_\epsilon = \tfrac{1}{2} I_2$, 
 \begin{equation}
 	\pi_{X \mid Y}( x \mid (1,1)^T ) = N \bigg( x \ \Big \mid \ \bigg( \begin{smallmatrix} \tfrac{3}{2} \\ \tfrac{3}{2} \end{smallmatrix} \bigg) , \bigg( \begin{smallmatrix} \tfrac{1}{3} & 0 \\ 0 & \tfrac{1}{3} \end{smallmatrix} \bigg) \bigg) 
 \end{equation}
-Sampling 4000 steps of MYULA with 1000 to burn in gives a sample with KDE
+Sampling 4000 steps of MYULA with 1000 to burn in gives a sample with a KDE given in figure \ref{fig:gaussian_eg}.
 \begin{figure}[h]
+\label{fig:gaussian_eg}
 \centering
 \includegraphics[scale=0.6]{figs/gaussian_eg_posterior.png}	
 \caption{Posterior Sample KDE from MYULA. Sample mean at $(0.682, 0.681)^T$ with marginal variances of $0.42$ and $0.38$} 
@@ -155,17 +158,48 @@ Sampling 4000 steps of MYULA with 1000 to burn in gives a sample with KDE
 \end{eg}
 
 
+\newpage
+\section{Lasso Prior}
+
+In the same context as above we have the likelihood $N( y \mid A x, \Sigma_\epsilon)$, but know we have $- \log \pi_X (x) = g(x) = \| x \|_1$. Thus the prox of $g$ is given by:
+\begin{align}
+ \text{Prox}_g^\lambda (x) &= \arg \min_{u \in \RR^d} \tfrac{1}{2} \| u - x \|_2^2 + \lambda \|u \|_1
+\end{align}
+As the objective is separable componentwise; we get:
+\begin{align}
+ \text{Prox}_g^\lambda (x)_i &= \arg \min_{u_i \in \RR} \tfrac{1}{2} ( u_i - x_i )^2 + \lambda |u_i| \\
+ 	&= \{ u_i \in \RR : 0 \in \partial  \tfrac{1}{2} ( u_i - x_i )^2 + \lambda |u_i| \} \\
+ 	&= \{ u_i \in \RR : 0 \in (u_i - x_i) + \lambda \text{sign}(u_i) \mathbf{1}_{u_i \neq 0} + \lambda \mathbf{1}_{u_i = 0} [-1,1] \} \\
+ 	&= \text{sign}(x_i) \max(0, |x_i| - \lambda)
+\end{align}
+This is called the \textbf{soft-thresholding operator}. 
+
+\begin{figure}[h]
+\label{fig:lasso_eg}
+\centering
+\includegraphics[scale=0.6]{figs/lasso_eg_samples.png}	
+\caption{Posterior Sample KDE from MYULA. Sample mean at $(0.639, -0.019)^T$ with marginal variances of $0.44$ and $0.34$} 
+\end{figure}
+
+
+
  
 \newpage
-\section{Wavelet Priors}
+\section{Total Variation Prior}
 
 
 
 
 
 
+\newpage
+\section{Smooth Input Convex Neural Networks}
 
-
+The nodes of ICNNs are of the form:
+\begin{align*}
+ z_{i+1} = \phi_i ( B_i (z_i) + W_i(x_i) + b_i)	
+\end{align*}
+so if we use a smooth activation function $\phi_i = \text{softmax}$ we will have a smooth $g$, allowing us to ignore the prox step entirely. 
 
 
 
