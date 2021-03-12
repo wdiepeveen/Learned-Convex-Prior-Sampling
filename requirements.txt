@@ -3,3 +3,4 @@ torch
 torchvision
 tensorboard
 scikit-image~=0.16.2
+odl~=0.7.0

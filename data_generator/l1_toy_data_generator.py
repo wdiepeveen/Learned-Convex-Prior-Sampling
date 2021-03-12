@@ -9,7 +9,7 @@ This script generates the ground truth train and test data for the l1_toy_exampl
 data_dim = 10
 
 size_training_data = 500
-size_test_data = 50
+size_test_data = 100
 
 # Set seed
 np.random.seed(seed=0)
