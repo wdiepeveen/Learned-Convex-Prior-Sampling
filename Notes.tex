@@ -104,7 +104,7 @@ Once we've specified the prior and likelihood, we can estimate $x$ from the post
 \begin{equation}
  \EE( X \mid Y ) \approx \frac{1}{m} \sum_{i = 1}^m X_i \qquad \text{where } X_i \overset{iid}{\sim} \pi_{X \mid Y}
 \end{equation}
-To do this we need to sample from the posterior, which we do by designing a Markov Chain with the target posterior as its stationary distribution. In our case we can use the MYULA chain
+To do this we need to sample from the posterior, which we do by designing a Markov Chain with the target posterior as its stationary distribution. This also has the benefit of allowing us to quantify the uncertainty in our estimate using the sample variance of these samples. In our case we can use the MYULA chain
 
 \begin{prop}
 If $- \log \pi_{X \mid Y} = f + g $ where $f$ is convex, proper, lower semicontinuous and has $L_f$-Lipschitz gradient and $g$ is convex, proper and lower semicontinuous, then the chain with transitions:
@@ -165,7 +165,7 @@ In the same context as above we have the likelihood $N( y \mid A x, \Sigma_\epsi
 \begin{align}
  \text{Prox}_g^\lambda (x) &= \arg \min_{u \in \RR^d} \tfrac{1}{2} \| u - x \|_2^2 + \lambda \|u \|_1
 \end{align}
-As the objective is separable componentwise; we get:
+As the objective is separable component wise; we get:
 \begin{align}
  \text{Prox}_g^\lambda (x)_i &= \arg \min_{u_i \in \RR} \tfrac{1}{2} ( u_i - x_i )^2 + \lambda |u_i| \\
  	&= \{ u_i \in \RR : 0 \in \partial  \tfrac{1}{2} ( u_i - x_i )^2 + \lambda |u_i| \} \\
@@ -187,6 +187,12 @@ This is called the \textbf{soft-thresholding operator}.
 \newpage
 \section{Total Variation Prior}
 
+
+
+\newpage
+\section{Wavelet Prior}
+
+We can transform the image into a wavelet domain and penalise the coefficients in this new basis. 
 
 
 
