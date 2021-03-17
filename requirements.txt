@@ -4,3 +4,7 @@ torchvision
 tensorboard
 scikit-image~=0.16.2
 odl~=0.7.0
+scipy~=1.6.1
+Keras~=2.4.3
+matplotlib~=3.3.4
+tensorflow

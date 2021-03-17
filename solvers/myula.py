@@ -42,20 +42,20 @@ class MYULA:
             self.x = x_init
 
     def compute_chain(self):
-        logger.info("Start burn-in steps")
+        print("Start burn-in steps")
         for i in range(self.burn_in):
             self.do_step()
 
         logger.info("Finished burn-in steps")
 
-        num_slots = int(np.floor(self.num_its/self.thinning))
+        num_slots = int(np.ceil(self.num_its/self.thinning))
         X = np.zeros((num_slots,) + self.problem.shape)
         k = 0
-        logger.info("Start Markov chain steps")
+        print("Start Markov chain steps")
         for i in range(self.num_its):
             self.do_step()
-            if self.num_its % self.thinning == 0:
-                logger.info("Iteration {}/{}".format(i+1, self.num_its))
+            if i % self.thinning == 0:
+                print("Iteration {}/{}".format(i, self.num_its))
                 X[k] = self.x
                 k+=1
 
