@@ -2,3 +2,6 @@
 *.npy
 *.pt
 /test/
+*.gz
+*.png
+*.png
