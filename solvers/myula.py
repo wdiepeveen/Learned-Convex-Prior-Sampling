@@ -55,9 +55,11 @@ class MYULA:
         for i in range(self.num_its):
             self.do_step()
             if i % self.thinning == 0:
-                print("Iteration {}/{}".format(i, self.num_its))
                 X[k] = self.x
                 k+=1
+
+            if i % 100 == 0:
+                print("Iteration {}/{}".format(i, self.num_its))
 
         return X
 
