@@ -8,6 +8,7 @@ import pywt.data
 from gradients.l2_data_fidelity import gradient_l2_data_fidelity
 from problems import Problem
 from proxes.l1_norm import prox_l1_norm
+from proxes.l2_norm import prox_l2_norm
 from proxes.TV import prox_TV
 from solvers.myula import MYULA
 
@@ -17,6 +18,19 @@ data_var = 24
 rng = np.random.default_rng()
 wav = 'bior1.3'
 levs = None
+
+
+def nlog_likelihood(x, y, data_var = 1):
+	# \frac{1}{2var}\|Ax - y\|_2^2
+	return ( np.linalg.norm( x - y )**2 ) / (2.0 * data_var)
+
+def nlog_prior(x):
+	diffs = np.zeros(x.shape)
+	for i in range(x.shape[0]-1):
+		for j in range(x.shape[1]-1):
+			diffs[i,j] = np.abs(x[i,j] - x[i+1,j]) + np.abs(x[i,j] - x[i,j+1])
+	return np.sum(diffs)
+
 
 #### Load cameraman image
 x_offset = 60
@@ -80,18 +94,18 @@ data, slices = pywt.coeffs_to_array(coeffs)
 # 	for j in range(3):
 # 		data = np.concatenate( (data, coeffs[i+1][j].ravel()) )
 
-titles = ['Original image (x)', 'Noisy Image (y)', 'Wavelet transformation (Dy)']
+# titles = ['Original image (x)', 'Noisy Image (y)', 'Wavelet transformation (Dy)']
 
-fig = plt.figure(figsize=(9, 3))
-for i, a in enumerate([original, original + noise, data]):
-    ax = fig.add_subplot(1, 3, i + 1)
-    ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
-    ax.set_title(titles[i], fontsize=10)
-    ax.set_xticks([])
-    ax.set_yticks([])
+# fig = plt.figure(figsize=(9, 3))
+# for i, a in enumerate([original, original + noise, data]):
+    # ax = fig.add_subplot(1, 3, i + 1)
+    # ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
+    # ax.set_title(titles[i], fontsize=10)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
-fig.tight_layout()
-plt.show()
+# fig.tight_layout()
+# plt.show()
 
 
 
@@ -99,7 +113,7 @@ plt.show()
 
 delta = 0.2
 lambd = 1
-n = 4000
+n = 5000
 
 
 def oper(x):
@@ -134,7 +148,7 @@ prob = Problem(shape=data.shape)
 
 myula_mc = MYULA(problem = prob,
 				 num_its = n,
-				 burn_in = 10,
+				 burn_in = 50,
 				 thinning = 1,
 				 x_init = data,
 				 gradient_f = gradient,
@@ -158,47 +172,73 @@ chain = myula_mc.compute_chain(print_logs = True)
 # fig.tight_layout()
 # plt.show()
 
-# im_chain = np.array([a for a in chain])
+# im_chain = chain
 im_chain = np.array([pywt.waverec2(pywt.array_to_coeffs(a, slices, 'wavedec2'), wav) for a in chain])
+
+print(im_chain.shape)
+iterative_means = np.zeros(im_chain.shape)
+for i in range(1, len(im_chain)):
+	iterative_means[i] = np.mean(im_chain[:i], axis = 0)
+iterative_norms = np.zeros(im_chain.shape[0] - 1)
+for i in range(len(im_chain) - 1):
+	iterative_norms[i] = np.linalg.norm(iterative_means[i+1] - iterative_means[i])
 
 sample_mean = np.mean(im_chain, axis = 0)
 sample_var = np.var(im_chain, axis = 0)
+sample_sd = np.std(im_chain, axis = 0)
 
-# titles = ['Original image (x)', 'Noisy Image (y)', "Posterior Mean", "Pixelwise Variance"]
-# fig = plt.figure(figsize=(12, 3))
-# for i, a in enumerate([original, original + noise, sample_mean, sample_var]):
-#     ax = fig.add_subplot(1, 4, i + 1)
-#     ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
-#     ax.set_title(titles[i], fontsize=10)
-#     ax.set_xticks([])
-#     ax.set_yticks([])
-
-# fig.tight_layout()
-# plt.show()
-
-# titles = ["Posterior Mean", "Pixelwise Variance"]
-# fig = plt.figure(figsize=(6, 3))
-# for i, a in enumerate([sample_mean, sample_var]):
-#     ax = fig.add_subplot(1, 2, i + 1)
-#     ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
-#     ax.set_title(titles[i], fontsize=10)
-#     ax.set_xticks([])
-#     ax.set_yticks([])
-
-# fig.tight_layout()
-# plt.show()
-
-# titles = ["Posterior Mean", "Pixelwise Variance"]
-fig = plt.figure(figsize=(15, 3))
-for i, a in enumerate(im_chain[1000:1005]):
-    ax = fig.add_subplot(1, 5, i + 1)
+titles = ['Original image (x)', 'Noisy Image (y)', "Posterior Mean", "Pixelwise Standard Deviation"]
+fig = plt.figure(figsize=(12, 3))
+for i, a in enumerate([original, original + noise, sample_mean, sample_sd]):
+    ax = fig.add_subplot(1, 4, i + 1)
     ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
-    ax.set_title("Sample {}".format(i), fontsize=10)
+    ax.set_title(titles[i], fontsize=10)
     ax.set_xticks([])
     ax.set_yticks([])
 
 fig.tight_layout()
 plt.show()
+
+# alpha = 0.1
+
+# nlog_liks_samples = np.array([nlog_likelihood(a, data, data_var) + alpha * nlog_prior(a) for a in chain])
+# nlog_liks_means = np.array([nlog_likelihood(a, data, data_var) + alpha * nlog_prior(a) for a in iterative_means])
+# plt.semilogy(nlog_liks_samples, "r-", label="Sample likelihoods")
+# plt.semilogy(nlog_liks_means, "b-", label="Likelihood of iterative means")
+# plt.xlabel("Number of samples")
+# plt.ylabel("Negative log likelihoods")
+# plt.legend(loc = "upper right")
+# plt.show()
+
+plt.semilogy(iterative_norms)
+plt.xlabel("Iterations")
+plt.ylabel("Successive Iterative Distance")
+plt.show()
+
+
+# titles = ["Posterior Mean", "Pixelwise Variance", "Example Sample"]
+# fig = plt.figure(figsize=(9, 3))
+# for i, a in enumerate([sample_mean, sample_var, im_chain[1000]]):
+#     ax = fig.add_subplot(1, 3, i + 1)
+#     ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
+#     ax.set_title(titles[i], fontsize=10)
+#     ax.set_xticks([])
+#     ax.set_yticks([])
+
+# fig.tight_layout()
+# plt.show()
+
+# fig = plt.figure(figsize=(12, 3))
+# means = iterative_means[]
+# for i, a in enumerate(im_chain[100:104]):
+#     ax = fig.add_subplot(1, 4, i + 1)
+#     ax.imshow(a, interpolation="nearest", cmap=plt.cm.gray)
+#     ax.set_title("Sample {}".format(i), fontsize=10)
+#     ax.set_xticks([])
+#     ax.set_yticks([])
+
+# fig.tight_layout()
+# plt.show()
 
 
 
